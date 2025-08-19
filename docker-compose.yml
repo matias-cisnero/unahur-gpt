@@ -1,0 +1,81 @@
+name: unahur-gpt
+
+services:
+  ollama:
+    container_name: ollama
+    image: ollama/ollama
+    restart: unless-stopped
+    ports:
+      - 11434:11434
+    volumes:
+      - ./volumes/ollama:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  open-webui:
+    container_name: open-webui
+    build: .
+    restart: unless-stopped
+    ports:
+      - 3000:8080
+    volumes:
+      - ./volumes/open-webui:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - WEBUI_NAME=${WEBUI_NAME}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - ENABLE_OAUTH_SIGNUP=${ENABLE_OAUTH_SIGNUP}
+      - OAUTH_UPDATE_PICTURE_ON_LOGIN=${OAUTH_UPDATE_PICTURE_ON_LOGIN}
+      - ENABLE_LOGIN_FORM=${ENABLE_LOGIN_FORM}
+      - ENABLE_SIGNUP=${ENABLE_SIGNUP}
+      - ENABLE_LDAP=${ENABLE_LDAP}
+      - OPENID_REDIRECT_URI=${OPENID_REDIRECT_URI}
+      - OPENID_PROVIDER_URL=${OPENID_PROVIDER_URL}
+    depends_on:
+      - ollama
+      - db
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  db:
+    container_name: postgresql
+    build: ./postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    container_name: n8n
+    image: n8nio/n8n
+    restart: unless-stopped
+    ports:
+      - 5678:5678
+    volumes:
+      - ./volumes/n8n:/home/node/.n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}

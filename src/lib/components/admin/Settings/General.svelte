@@ -183,7 +183,7 @@
 
 							<a
 								class="flex-shrink-0 text-xs font-medium underline"
-								href="https://docs.openwebui.com/"
+								href="https://docs.google.com/document/d/1mYvECR_NbZxbsdrXlIY3iEfWuWlCm0WR5EcUs6XKO5k/edit?usp=sharing"
 								target="_blank"
 							>
 								{$i18n.t('Documentation')}
